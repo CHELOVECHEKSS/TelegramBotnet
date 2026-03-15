@@ -1,0 +1,6 @@
+flask
+flask-socketio
+pyrogram
+tgcrypto
+pywebview
+wonderwords

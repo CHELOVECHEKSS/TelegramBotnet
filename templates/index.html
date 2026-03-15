@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TelegramBotnet</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+</head>
+<body>
+
+<!-- Intro overlay -->
+<div id="intro-overlay">
+    <canvas id="intro-matrix" style="position:absolute;inset:0;opacity:0.12;display:none;"></canvas>
+    <div id="intro-scanlines" style="display:none"></div>
+    <div class="intro-corner" style="top:16px;left:16px;border-width:2px 0 0 2px"></div>
+    <div class="intro-corner" style="top:16px;right:16px;border-width:2px 2px 0 0"></div>
+    <div class="intro-corner" style="bottom:16px;left:16px;border-width:0 0 2px 2px"></div>
+    <div class="intro-corner" style="bottom:16px;right:16px;border-width:0 2px 2px 0"></div>
+    <div id="intro-cmd">
+        <div id="intro-cmd-history"></div>
+        <div id="intro-cmd-line">
+            <span class="intro-term-prompt">C:\TelegramBotnet&gt;&nbsp;</span>
+            <span id="intro-term-input"></span><span class="intro-cursor">█</span>
+        </div>
+    </div>
+    <div id="intro-content" style="display:none">
+        <div id="intro-logo">
+            <svg id="intro-logo-img" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8l-1.68 7.92c-.12.56-.44.7-.9.44l-2.48-1.83-1.2 1.15c-.13.13-.24.24-.5.24l.18-2.52 4.6-4.16c.2-.18-.04-.28-.31-.1L7.4 14.47 4.96 13.7c-.54-.17-.55-.54.11-.8l9.4-3.62c.45-.16.84.11.17.52z" fill="currentColor"/>
+            </svg>
+        </div>
+        <div id="intro-title"><span id="intro-title-text"></span><span class="intro-cursor">█</span></div>
+        <div id="intro-subtitle" style="opacity:0">TELEGRAM BOTNET TOOLKIT</div>
+    </div>
+</div>
+
+<div class="particles" id="particles"></div>
+
+<nav class="sidebar">
+    <div class="logo">
+        <svg class="logo-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8l-1.68 7.92c-.12.56-.44.7-.9.44l-2.48-1.83-1.2 1.15c-.13.13-.24.24-.5.24l.18-2.52 4.6-4.16c.2-.18-.04-.28-.31-.1L7.4 14.47 4.96 13.7c-.54-.17-.55-.54.11-.8l9.4-3.62c.45-.16.84.11.17.52z" fill="currentColor"/>
+        </svg>
+        <h1>TelegramBotnet</h1>
+    </div>
+    <ul class="nav-menu">
+        <li class="nav-item" data-section="sessions">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>
+            <span>Сессии</span>
+        </li>
+        <li class="nav-item" data-section="spam">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>
+            <span>Спам</span>
+        </li>
+        <li class="nav-item" data-section="customize">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9c.83 0 1.5-.67 1.5-1.5 0-.39-.15-.74-.39-1.01-.23-.26-.38-.61-.38-.99 0-.83.67-1.5 1.5-1.5H16c2.76 0 5-2.24 5-5 0-4.42-4.03-8-9-8zm-5.5 9c-.83 0-1.5-.67-1.5-1.5S5.67 9 6.5 9 8 9.67 8 10.5 7.33 12 6.5 12zm3-4C8.67 8 8 7.33 8 6.5S8.67 5 9.5 5s1.5.67 1.5 1.5S10.33 8 9.5 8zm5 0c-.83 0-1.5-.67-1.5-1.5S13.67 5 14.5 5s1.5.67 1.5 1.5S15.33 8 14.5 8zm3 4c-.83 0-1.5-.67-1.5-1.5S16.67 9 17.5 9s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg>
+            <span>Кастомизация</span>
+        </li>
+        <li class="nav-item" data-section="settings">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94c.04-.3.06-.61.06-.94s-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96a7.02 7.02 0 0 0-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96a.47.47 0 0 0-.59.22L2.74 8.87a.47.47 0 0 0 .12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32a.47.47 0 0 0-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+            <span>Настройки</span>
+        </li>
+        <li class="nav-item" data-section="about">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+            <span>О приложении</span>
+        </li>
+    </ul>
+    <div class="sidebar-footer">
+        <div class="status-indicator">
+            <span class="pulse"></span>
+            <span id="status-text">Ready</span>
+        </div>
+    </div>
+</nav>
+
+<main class="content">
+
+    <!-- ── SESSIONS ──────────────────────────────────────────────────────── -->
+    <section id="sessions-section" class="section active">
+        <div class="section-header">
+            <h2>// СЕССИИ</h2>
+            <button class="btn" id="cleanup-btn" title="Удалить невалидные .session файлы" style="opacity:0.7;font-size:0.8rem">
+                <svg class="btn-icon-svg" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+                Очистить файлы
+            </button>
+        </div>
+
+        <!-- Section tabs -->
+        <div class="section-tabs">
+            <button class="section-tab active" data-stab="list">
+                <svg class="btn-icon-svg" viewBox="0 0 24 24" fill="currentColor"><path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/></svg>
+                Список
+            </button>
+            <button class="section-tab" data-stab="add">
+                <svg class="btn-icon-svg" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+                Добавить
+            </button>
+        </div>
+
+        <!-- TAB: List -->
+        <div id="stab-list">
+            <div id="verify-form" style="display:none" class="settings-group">
+                <h3>// ПОДТВЕРЖДЕНИЕ КОДА</h3>
+                <div style="color:var(--text-secondary);font-size:0.85rem;margin-bottom:1rem" id="verify-hint">Введите код из Telegram</div>
+                <div class="controls-row" style="max-width:400px">
+                    <div class="form-group">
+                        <label>Код подтверждения</label>
+                        <input type="text" id="verify-code" class="input-field" placeholder="12345" maxlength="10">
+                    </div>
+                    <button class="btn" id="verify-submit-btn">Подтвердить</button>
+                </div>
+            </div>
+            <div id="twofa-form" style="display:none" class="settings-group">
+                <h3>// ДВУХФАКТОРНАЯ АУТЕНТИФИКАЦИЯ</h3>
+                <div style="color:var(--text-secondary);font-size:0.85rem;margin-bottom:1rem">Аккаунт защищён паролем 2FA.</div>
+                <div class="controls-row" style="max-width:400px">
+                    <div class="form-group">
+                        <label>Пароль 2FA</label>
+                        <input type="password" id="twofa-password" class="input-field" placeholder="••••••••">
+                    </div>
+                    <button class="btn" id="twofa-submit-btn">Подтвердить</button>
+                </div>
+            </div>
+            <div id="sessions-list">
+                <div id="sessions-empty" style="color:var(--text-secondary);font-size:0.85rem;padding:2rem 0">
+                    // Нет добавленных сессий. Перейдите во вкладку "Добавить".
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: Add -->
+        <div id="stab-add" style="display:none">
+            <div class="import-tabs" style="display:flex;gap:0;margin-bottom:1.2rem;border-bottom:1px solid var(--border)">
+                <button class="import-tab active" data-tab="phone" style="background:none;border:none;border-bottom:2px solid var(--primary);color:var(--primary);padding:0.5rem 1.2rem;cursor:pointer;font-family:FiraCode,monospace;font-size:0.82rem;letter-spacing:0.05em">
+                    <svg style="width:13px;height:13px;vertical-align:middle;margin-right:4px" viewBox="0 0 24 24" fill="currentColor"><path d="M6.62 10.79a15.05 15.05 0 006.59 6.59l2.2-2.2a1 1 0 011.01-.24 11.47 11.47 0 003.58.57 1 1 0 011 1V20a1 1 0 01-1 1A17 17 0 013 4a1 1 0 011-1h3.5a1 1 0 011 1 11.47 11.47 0 00.57 3.58 1 1 0 01-.25 1.01l-2.2 2.2z"/></svg>
+                    Телефон
+                </button>
+                <button class="import-tab" data-tab="file" style="background:none;border:none;border-bottom:2px solid transparent;color:var(--text-secondary);padding:0.5rem 1.2rem;cursor:pointer;font-family:FiraCode,monospace;font-size:0.82rem;letter-spacing:0.05em">
+                    <svg style="width:13px;height:13px;vertical-align:middle;margin-right:4px" viewBox="0 0 24 24" fill="currentColor"><path d="M20 6h-8l-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2z"/></svg>
+                    .session файл
+                </button>
+                <button class="import-tab" data-tab="bulk" style="background:none;border:none;border-bottom:2px solid transparent;color:var(--text-secondary);padding:0.5rem 1.2rem;cursor:pointer;font-family:FiraCode,monospace;font-size:0.82rem;letter-spacing:0.05em">
+                    <svg style="width:13px;height:13px;vertical-align:middle;margin-right:4px" viewBox="0 0 24 24" fill="currentColor"><path d="M20 6h-8l-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-6 10H6v-2h8v2zm2-4H6v-2h10v2z"/></svg>
+                    Много файлов
+                </button>
+            </div>
+
+            <!-- Phone tab -->
+            <div id="tab-phone">
+                <div class="controls-row">
+                    <div class="form-group">
+                        <label>Номер телефона</label>
+                        <input type="text" id="sess-phone" class="input-field" placeholder="+79001234567">
+                    </div>
+                    <div class="form-group">
+                        <label>API ID</label>
+                        <input type="text" id="sess-api-id" class="input-field" placeholder="12345678" value="21592124">
+                    </div>
+                    <div class="form-group">
+                        <label>API Hash</label>
+                        <input type="text" id="sess-api-hash" class="input-field" placeholder="abcdef1234567890..." value="c2100f2a2c6beb6af0a98830509f371a">
+                    </div>
+                </div>
+                <div class="setting-item" style="border:none;padding:0 0 1rem 0">
+                    <label>Режим сервера</label>
+                    <div class="server-mode-toggle">
+                        <span class="mode-label" id="mode-label-prod">Production</span>
+                        <label class="switch-server">
+                            <input type="checkbox" id="sess-test-mode">
+                            <span class="slider-server">
+                                <span class="slider-server-knob"></span>
+                            </span>
+                        </label>
+                        <span class="mode-label" id="mode-label-test">Test</span>
+                    </div>
+                </div>
+                <div id="server-mode-badge" class="mode-badge mode-prod">
+                    <span class="mode-dot"></span>
+                    <span id="mode-badge-text">PRODUCTION SERVER</span>
+                </div>
+                <div style="display:flex;gap:0.75rem;margin-top:1rem">
+                    <button class="btn" id="sess-submit-btn">Подключить</button>
+                    <button class="btn btn-danger" id="sess-cancel-btn">Отмена</button>
+                </div>
+            </div>
+
+            <!-- File tab -->
+            <div id="tab-file" style="display:none">
+                <div class="controls-row">
+                    <div class="form-group">
+                        <label>API ID</label>
+                        <input type="text" id="import-api-id" class="input-field" placeholder="12345678" value="21592124">
+                    </div>
+                    <div class="form-group">
+                        <label>API Hash</label>
+                        <input type="text" id="import-api-hash" class="input-field" placeholder="abcdef..." value="c2100f2a2c6beb6af0a98830509f371a">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Файл .session</label>
+                    <div id="drop-zone" style="border:2px dashed var(--border);border-radius:4px;padding:2rem;text-align:center;cursor:pointer;color:var(--text-secondary);font-size:0.85rem;transition:border-color 0.2s">
+                        <svg style="width:32px;height:32px;margin-bottom:0.5rem;opacity:0.5" viewBox="0 0 24 24" fill="currentColor"><path d="M20 6h-8l-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2z"/></svg>
+                        <div id="drop-label">Перетащите .session файл или нажмите для выбора</div>
+                        <input type="file" id="import-file" accept=".session" style="display:none">
+                    </div>
+                </div>
+                <div class="setting-item" style="border:none;padding:0 0 1rem 0">
+                    <label>Режим сервера</label>
+                    <div class="server-mode-toggle">
+                        <span class="mode-label">Production</span>
+                        <label class="switch-server">
+                            <input type="checkbox" id="import-test-mode">
+                            <span class="slider-server">
+                                <span class="slider-server-knob"></span>
+                            </span>
+                        </label>
+                        <span class="mode-label">Test</span>
+                    </div>
+                </div>
+                <div style="display:flex;gap:0.75rem;margin-top:1rem">
+                    <button class="btn" id="import-submit-btn">Импортировать</button>
+                </div>
+            </div>
+
+            <!-- Bulk tab -->
+            <div id="tab-bulk" style="display:none" class="settings-group">
+                <div class="controls-row">
+                    <div class="form-group">
+                        <label>API ID</label>
+                        <input type="text" id="bulk-api-id" class="input-field" placeholder="12345678" value="21592124">
+                    </div>
+                    <div class="form-group">
+                        <label>API Hash</label>
+                        <input type="text" id="bulk-api-hash" class="input-field" placeholder="abcdef..." value="c2100f2a2c6beb6af0a98830509f371a">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Файлы .session</label>
+                    <div id="bulk-drop-zone" style="border:2px dashed var(--border);border-radius:4px;padding:2rem;text-align:center;cursor:pointer;color:var(--text-secondary);font-size:0.85rem;transition:border-color 0.2s">
+                        <svg style="width:32px;height:32px;margin-bottom:0.5rem;opacity:0.5" viewBox="0 0 24 24" fill="currentColor"><path d="M20 6h-8l-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-6 10H6v-2h8v2zm2-4H6v-2h10v2z"/></svg>
+                        <div id="bulk-drop-label">Перетащите несколько .session файлов или нажмите для выбора</div>
+                        <input type="file" id="bulk-file-input" accept=".session" multiple style="display:none">
+                    </div>
+                    <div id="bulk-file-list" style="margin-top:0.75rem;display:flex;flex-wrap:wrap;gap:0.4rem"></div>
+                </div>
+                <div class="setting-item" style="border:none;padding:0 0 1rem 0">
+                    <label>Режим сервера</label>
+                    <div class="server-mode-toggle">
+                        <span class="mode-label">Production</span>
+                        <label class="switch-server">
+                            <input type="checkbox" id="bulk-test-mode">
+                            <span class="slider-server"><span class="slider-server-knob"></span></span>
+                        </label>
+                        <span class="mode-label">Test</span>
+                    </div>
+                </div>
+                <div class="progress-container" id="bulk-progress-box" style="display:none">
+                    <div class="progress-bar"><div class="progress-fill" id="bulk-progress-fill" style="width:0%"></div></div>
+                    <div class="progress-text" id="bulk-progress-text">0 / 0</div>
+                </div>
+                <div class="result-box" id="bulk-log" style="max-height:200px;overflow-y:auto;margin-top:0.75rem;display:none"></div>
+                <div style="margin-top:1rem">
+                    <button class="btn" id="bulk-submit-btn">Импортировать все</button>
+                </div>
+            </div>
+
+        </div><!-- /stab-add -->
+
+    </section>
+
+    <!-- ── SPAM ──────────────────────────────────────────────────────────── -->
+    <section id="spam-section" class="section">
+        <div class="section-header">
+            <h2>// СПАМ</h2>
+            <div style="display:flex;gap:0.5rem">
+                <button class="btn" id="spam-start-btn">
+                    <svg class="btn-icon-svg" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                    Запустить
+                </button>
+                <button class="btn btn-danger" id="spam-stop-btn" style="display:none">
+                    <svg class="btn-icon-svg" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h12v12H6z"/></svg>
+                    Стоп
+                </button>
+            </div>
+        </div>
+
+        <div class="setting-item" style="border:none;padding:0 0 1rem 0">
+            <label style="display:flex;align-items:center;gap:0.6rem;cursor:pointer">
+                <label class="switch" style="margin:0">
+                    <input type="checkbox" id="spam-all-sessions">
+                    <span class="slider"></span>
+                </label>
+                Спам со всех сессий
+            </label>
+        </div>
+
+        <div class="controls-row">
+            <div class="form-group" id="spam-session-group">
+                <label>Сессия</label>
+                <select id="spam-session" class="input-field" style="min-width:180px">
+                    <option value="">— выберите сессию —</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Цель (username / id / @bot)</label>
+                <input type="text" id="spam-target" class="input-field" placeholder="@username или 123456789">
+            </div>
+            <div class="form-group" style="max-width:160px">
+                <label>Режим</label>
+                <select id="spam-mode" class="input-field">
+                    <option value="message">Текст в ЛС / группу</option>
+                    <option value="start">/start боту</option>
+                </select>
+            </div>
+            <div class="form-group" style="max-width:100px">
+                <label>Кол-во</label>
+                <input type="number" id="spam-count" class="input-field" value="10" min="1">
+            </div>
+            <div class="form-group" style="max-width:110px">
+                <label>Задержка (сек)</label>
+                <input type="number" id="spam-delay" class="input-field" value="1" min="0" step="0.1">
+            </div>
+        </div>
+
+        <div id="spam-message-group" class="form-group">
+            <label>Текст сообщения</label>
+            <textarea id="spam-message" class="input-field" rows="3" placeholder="Введите текст..."></textarea>
+        </div>
+
+        <div class="progress-container" id="spam-progress-box" style="display:none">
+            <div class="progress-bar"><div class="progress-fill" id="spam-progress-fill" style="width:0%"></div></div>
+            <div class="progress-text" id="spam-progress-text">0 / 0</div>
+        </div>
+
+        <div class="result-box" id="spam-log" style="max-height:300px;overflow-y:auto;margin-top:1rem"></div>
+    </section>
+
+    <!-- ── CUSTOMIZE ─────────────────────────────────────────────────────── -->
+    <section id="customize-section" class="section">
+        <div class="section-header">
+            <h2>// КАСТОМИЗАЦИЯ</h2>
+            <button class="btn" id="cust-apply-btn">
+                <svg class="btn-icon-svg" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                Применить
+            </button>
+        </div>
+
+        <div style="max-width:800px">
+
+            <!-- Target -->
+            <div class="settings-group">
+                <h3>// ЦЕЛЬ</h3>
+                <div class="setting-item" style="border:none;padding:0 0 0.8rem 0">
+                    <label style="display:flex;align-items:center;gap:0.6rem;cursor:pointer">
+                        <label class="switch" style="margin:0">
+                            <input type="checkbox" id="cust-all-sessions">
+                            <span class="slider"></span>
+                        </label>
+                        Применить ко всем сессиям
+                    </label>
+                </div>
+                <div id="cust-session-group" class="form-group">
+                    <label>Сессия</label>
+                    <select id="cust-session" class="input-field" style="min-width:220px">
+                        <option value="">— выберите сессию —</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Name -->
+            <div class="settings-group">
+                <h3>// ИМЯ И ФАМИЛИЯ</h3>
+                <div class="setting-item" style="border:none;padding:0 0 0.8rem 0">
+                    <label style="display:flex;align-items:center;gap:0.6rem;cursor:pointer">
+                        <label class="switch" style="margin:0">
+                            <input type="checkbox" id="cust-gen-name">
+                            <span class="slider"></span>
+                        </label>
+                        Сгенерировать случайное имя
+                    </label>
+                </div>
+                <div id="cust-name-fields" class="controls-row">
+                    <div class="form-group">
+                        <label>Имя</label>
+                        <div style="display:flex;gap:0.5rem">
+                            <input type="text" id="cust-first-name" class="input-field" placeholder="Имя">
+                            <button class="btn" id="cust-gen-name-btn" title="Сгенерировать" style="padding:0 0.75rem">⟳</button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Фамилия</label>
+                        <input type="text" id="cust-last-name" class="input-field" placeholder="Фамилия (необязательно)">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Username -->
+            <div class="settings-group">
+                <h3>// USERNAME</h3>
+                <div class="setting-item" style="border:none;padding:0 0 0.8rem 0">
+                    <label style="display:flex;align-items:center;gap:0.6rem;cursor:pointer">
+                        <label class="switch" style="margin:0">
+                            <input type="checkbox" id="cust-gen-username">
+                            <span class="slider"></span>
+                        </label>
+                        Сгенерировать случайный username
+                    </label>
+                </div>
+                <div id="cust-username-field" class="form-group" style="max-width:340px">
+                    <label>Username (без @)</label>
+                    <div style="display:flex;gap:0.5rem">
+                        <input type="text" id="cust-username" class="input-field" placeholder="myusername">
+                        <button class="btn" id="cust-gen-username-btn" title="Сгенерировать" style="padding:0 0.75rem">⟳</button>
+                    </div>
+                </div>
+                <div class="setting-item" style="border:none;padding:0.5rem 0 0 0">
+                    <label style="display:flex;align-items:center;gap:0.6rem;cursor:pointer">
+                        <label class="switch" style="margin:0">
+                            <input type="checkbox" id="cust-clear-username">
+                            <span class="slider"></span>
+                        </label>
+                        Очистить username
+                    </label>
+                </div>
+            </div>
+
+            <!-- Bio -->
+            <div class="settings-group">
+                <h3>// BIO</h3>
+                <div class="form-group">
+                    <label>Описание профиля (до 70 символов)</label>
+                    <textarea id="cust-bio" class="input-field" rows="2" maxlength="70" placeholder="Описание..."></textarea>
+                </div>
+            </div>
+
+            <!-- Photo -->
+            <div class="settings-group">
+                <h3>// ФОТО ПРОФИЛЯ</h3>
+                <div id="cust-photo-drop" style="border:2px dashed var(--border);border-radius:4px;padding:1.5rem;text-align:center;cursor:pointer;color:var(--text-secondary);font-size:0.85rem;transition:border-color 0.2s;max-width:400px">
+                    <svg style="width:32px;height:32px;margin-bottom:0.4rem;opacity:0.5" viewBox="0 0 24 24" fill="currentColor"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
+                    <div id="cust-photo-label">Перетащите фото или нажмите для выбора</div>
+                    <input type="file" id="cust-photo-input" accept="image/*" style="display:none">
+                </div>
+                <div id="cust-photo-preview" style="display:none;margin-top:0.75rem">
+                    <img id="cust-photo-img" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:2px solid var(--primary)">
+                    <button class="btn btn-danger" id="cust-photo-clear" style="margin-left:0.75rem;padding:0.3rem 0.75rem;font-size:0.78rem">
+                        <svg style="width:12px;height:12px;vertical-align:middle" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+                        Убрать
+                    </button>
+                </div>
+            </div>
+
+            <!-- Progress -->
+            <div class="progress-container" id="cust-progress-box" style="display:none">
+                <div class="progress-bar"><div class="progress-fill" id="cust-progress-fill" style="width:0%"></div></div>
+                <div class="progress-text" id="cust-progress-text">0 / 0</div>
+            </div>
+            <div class="result-box" id="cust-log" style="max-height:260px;overflow-y:auto;margin-top:1rem"></div>
+        </div>
+    </section>
+
+    <!-- ── SETTINGS ──────────────────────────────────────────────────────── -->
+    <section id="settings-section" class="section">
+        <div class="section-header">
+            <h2>// НАСТРОЙКИ</h2>
+        </div>
+        <div style="max-width:700px">
+            <div class="settings-group">
+                <h3>Основные</h3>
+                <div class="setting-item">
+                    <label>Язык интерфейса</label>
+                    <select id="settings-lang" class="input-field" style="width:160px">
+                        <option value="ru">Русский</option>
+                        <option value="en">English</option>
+                    </select>
+                </div>
+                <div class="setting-item">
+                    <label>Звуки</label>
+                    <label class="switch">
+                        <input type="checkbox" id="settings-sounds" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="setting-item">
+                    <label>Уведомления</label>
+                    <label class="switch">
+                        <input type="checkbox" id="settings-notifications" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+            <div class="settings-group">
+                <h3>Telegram</h3>
+                <div class="setting-item">
+                    <label>Режим сервера по умолчанию</label>
+                    <div class="server-mode-toggle">
+                        <span class="mode-label">Production</span>
+                        <label class="switch-server">
+                            <input type="checkbox" id="settings-test-mode">
+                            <span class="slider-server">
+                                <span class="slider-server-knob"></span>
+                            </span>
+                        </label>
+                        <span class="mode-label">Test</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="settings-group">
+                <h3>// ПРОКСИ</h3>
+                <div class="setting-item" style="border:none;padding:0 0 0.8rem 0">
+                    <label style="display:flex;align-items:center;gap:0.6rem;cursor:pointer">
+                        <label class="switch" style="margin:0">
+                            <input type="checkbox" id="proxy-enabled">
+                            <span class="slider"></span>
+                        </label>
+                        Использовать прокси
+                    </label>
+                </div>
+                <div id="proxy-fields" style="display:none">
+                    <div class="setting-item" style="border:none;padding:0 0 0.8rem 0">
+                        <label>Тип прокси</label>
+                        <select id="proxy-type" class="input-field" style="width:160px">
+                            <option value="socks5">SOCKS5</option>
+                            <option value="socks4">SOCKS4</option>
+                            <option value="http">HTTP</option>
+                            <option value="mtproto">MTProto</option>
+                        </select>
+                    </div>
+                    <div class="controls-row">
+                        <div class="form-group">
+                            <label>Хост</label>
+                            <input type="text" id="proxy-host" class="input-field" placeholder="127.0.0.1">
+                        </div>
+                        <div class="form-group" style="max-width:110px">
+                            <label>Порт</label>
+                            <input type="number" id="proxy-port" class="input-field" placeholder="1080">
+                        </div>
+                    </div>
+                    <div id="proxy-auth-fields" class="controls-row">
+                        <div class="form-group">
+                            <label>Логин <span style="color:var(--text-secondary);font-size:0.78rem">(необязательно)</span></label>
+                            <input type="text" id="proxy-username" class="input-field" placeholder="user">
+                        </div>
+                        <div class="form-group">
+                            <label>Пароль <span style="color:var(--text-secondary);font-size:0.78rem">(необязательно)</span></label>
+                            <input type="password" id="proxy-password" class="input-field" placeholder="••••••">
+                        </div>
+                    </div>
+                    <div id="proxy-mtproto-fields" style="display:none" class="form-group">
+                        <label>MTProto Secret</label>
+                        <input type="text" id="proxy-secret" class="input-field" placeholder="dd...hex или ee...hex">
+                    </div>
+                    <div style="margin-top:0.5rem">
+                        <button class="btn" id="proxy-test-btn" style="padding:0.4rem 1rem;font-size:0.8rem">
+                            <svg class="btn-icon-svg" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                            Проверить
+                        </button>
+                        <span id="proxy-status" style="margin-left:0.75rem;font-size:0.82rem;color:var(--text-secondary)"></span>
+                    </div>
+                </div>
+            </div>
+
+            <button class="btn" id="settings-save-btn">Сохранить</button>
+        </div>
+    </section>
+
+
+    <!-- ── ABOUT ─────────────────────────────────────────────────────────── -->
+    <section id="about-section" class="section">
+        <div class="section-header">
+            <h2>// О ПРИЛОЖЕНИИ</h2>
+        </div>
+        <div style="max-width:720px">
+
+            <!-- Logo + title -->
+            <div style="display:flex;align-items:center;gap:1.5rem;margin-bottom:2rem">
+                <svg style="width:64px;height:64px;color:var(--primary);filter:drop-shadow(0 0 16px var(--primary));flex-shrink:0" viewBox="0 0 24 24" fill="none">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8l-1.68 7.92c-.12.56-.44.7-.9.44l-2.48-1.83-1.2 1.15c-.13.13-.24.24-.5.24l.18-2.52 4.6-4.16c.2-.18-.04-.28-.31-.1L7.4 14.47 4.96 13.7c-.54-.17-.55-.54.11-.8l9.4-3.62c.45-.16.84.11.17.52z" fill="currentColor"/>
+                </svg>
+                <div>
+                    <div style="font-family:'FiraCode',monospace;font-size:1.6rem;color:var(--primary);letter-spacing:0.15em;text-shadow:0 0 20px rgba(42,171,238,0.5)">TelegramBotnet</div>
+                    <div style="color:var(--text-secondary);font-size:0.78rem;letter-spacing:0.2em;margin-top:0.3rem">TOOLKIT v1.0.0</div>
+                </div>
+            </div>
+
+            <!-- Description -->
+            <div class="settings-group">
+                <h3>// ОПИСАНИЕ</h3>
+                <p style="color:var(--text-secondary);font-size:0.85rem;line-height:1.8">
+                    Десктопное приложение для управления Telegram аккаунтами через MTProto API.<br>
+                    Поддерживает массовый импорт сессий, рассылку сообщений, кастомизацию профилей и работу через прокси.
+                </p>
+            </div>
+
+            <!-- Author -->
+            <div class="settings-group">
+                <h3>// СОЗДАТЕЛЬ</h3>
+                <div style="display:flex;align-items:center;gap:1.2rem;padding:0.5rem 0">
+                    <div style="width:48px;height:48px;border:2px solid var(--primary);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 0 12px rgba(42,171,238,0.3)">
+                        <svg style="width:26px;height:26px;color:var(--primary)" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>
+                    </div>
+                    <div>
+                        <div style="font-family:'FiraCode',monospace;font-size:1rem;color:var(--primary);letter-spacing:0.08em">CHELOVECHEK</div>
+                        <div style="color:var(--text-secondary);font-size:0.78rem;margin-top:0.2rem">Developer &amp; Designer</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stack -->
+            <div class="settings-group">
+                <h3>// СТЕК</h3>
+                <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:0.75rem;margin-top:0.25rem">
+                    <div class="about-tech-card">
+                        <svg style="width:16px;height:16px;color:var(--primary)" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg>
+                        <span>Python 3.10+</span>
+                    </div>
+                    <div class="about-tech-card">
+                        <svg style="width:16px;height:16px;color:var(--primary)" viewBox="0 0 24 24" fill="currentColor"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-5 11.5v-9l6 4.5-6 4.5z"/></svg>
+                        <span>Flask + SocketIO</span>
+                    </div>
+                    <div class="about-tech-card">
+                        <svg style="width:16px;height:16px;color:var(--primary)" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8l-1.68 7.92c-.12.56-.44.7-.9.44l-2.48-1.83-1.2 1.15c-.13.13-.24.24-.5.24l.18-2.52 4.6-4.16c.2-.18-.04-.28-.31-.1L7.4 14.47 4.96 13.7c-.54-.17-.55-.54.11-.8l9.4-3.62c.45-.16.84.11.17.52z" fill="currentColor"/></svg>
+                        <span>Pyrogram + TgCrypto</span>
+                    </div>
+                    <div class="about-tech-card">
+                        <svg style="width:16px;height:16px;color:var(--primary)" viewBox="0 0 24 24" fill="currentColor"><path d="M20 3H4v10c0 2.21 1.79 4 4 4h6c2.21 0 4-1.79 4-4v-3h2c1.11 0 2-.89 2-2V5c0-1.11-.89-2-2-2zm0 5h-2V5h2v3zM4 19h16v2H4z"/></svg>
+                        <span>pywebview</span>
+                    </div>
+                    <div class="about-tech-card">
+                        <svg style="width:16px;height:16px;color:var(--primary)" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3L1 9l11 6 9-4.91V17h2V9L12 3zM5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82z"/></svg>
+                        <span>wonderwords</span>
+                    </div>
+                    <div class="about-tech-card">
+                        <svg style="width:16px;height:16px;color:var(--primary)" viewBox="0 0 24 24" fill="currentColor"><path d="M9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0l4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4z"/></svg>
+                        <span>Vanilla JS</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Features -->
+            <div class="settings-group">
+                <h3>// ФУНКЦИИ</h3>
+                <div style="display:flex;flex-direction:column;gap:0.5rem">
+                    <div class="about-feature-row">
+                        <svg style="width:14px;height:14px;color:var(--primary);flex-shrink:0" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>
+                        <span>Управление сессиями — добавление по телефону, импорт .session файлов, массовый импорт</span>
+                    </div>
+                    <div class="about-feature-row">
+                        <svg style="width:14px;height:14px;color:var(--primary);flex-shrink:0" viewBox="0 0 24 24" fill="currentColor"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
+                        <span>Рассылка — текст в ЛС/группу, /start боту, параллельный запуск со всех сессий</span>
+                    </div>
+                    <div class="about-feature-row">
+                        <svg style="width:14px;height:14px;color:var(--primary);flex-shrink:0" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9c.83 0 1.5-.67 1.5-1.5 0-.39-.15-.74-.39-1.01-.23-.26-.38-.61-.38-.99 0-.83.67-1.5 1.5-1.5H16c2.76 0 5-2.24 5-5 0-4.42-4.03-8-9-8z"/></svg>
+                        <span>Кастомизация — имя, фамилия, username, bio, фото; генерация через wonderwords</span>
+                    </div>
+                    <div class="about-feature-row">
+                        <svg style="width:14px;height:14px;color:var(--primary);flex-shrink:0" viewBox="0 0 24 24" fill="currentColor"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg>
+                        <span>Прокси — SOCKS5, SOCKS4, HTTP, MTProto</span>
+                    </div>
+                    <div class="about-feature-row">
+                        <svg style="width:14px;height:14px;color:var(--primary);flex-shrink:0" viewBox="0 0 24 24" fill="currentColor"><path d="M11.5 2C6.81 2 3 5.81 3 10.5S6.81 19 11.5 19h.5v3c4.86-2.34 8-7 8-11.5C20 5.81 16.19 2 11.5 2zm1 14.5h-2v-2h2v2zm0-4h-2c0-3.25 3-3 3-5 0-1.1-.9-2-2-2s-2 .9-2 2h-2c0-2.21 1.79-4 4-4s4 1.79 4 4c0 2.5-3 2.75-3 5z"/></svg>
+                        <span>Локализация — русский / English</span>
+                    </div>
+                    <div class="about-feature-row">
+                        <svg style="width:14px;height:14px;color:var(--primary);flex-shrink:0" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+                        <span>Автоочистка невалидных .session файлов</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Credits -->
+            <div class="settings-group">
+                <h3>// БЛАГОДАРНОСТИ</h3>
+                <div style="color:var(--text-secondary);font-size:0.83rem;line-height:2">
+                    <div>Звуковые эффекты — <span style="color:var(--primary)">eDEX-UI</span> by GitSquared (GPL-3.0)</div>
+                    <div>Шрифт — <span style="color:var(--primary)">Fira Code / Fira Mono</span> (SIL OFL 1.1)</div>
+                    <div>MTProto API — <span style="color:var(--primary)">Pyrogram</span> (LGPL-3.0)</div>
+                </div>
+            </div>
+
+            <!-- Build info -->
+            <div style="border:1px solid var(--border);padding:1rem 1.25rem;font-size:0.78rem;color:var(--text-secondary);font-family:'FiraCode',monospace;line-height:2">
+                <div>VERSION &nbsp;&nbsp;&nbsp;: <span style="color:var(--primary)">1.0.0</span></div>
+                <div>AUTHOR &nbsp;&nbsp;&nbsp;: <span style="color:var(--primary)">CHELOVECHEK</span></div>
+                <div>RUNTIME &nbsp;&nbsp;: <span style="color:var(--primary)">Python 3.10+ / Flask / pywebview</span></div>
+                <div>PROTOCOL &nbsp;: <span style="color:var(--primary)">Telegram MTProto API</span></div>
+                <div>UI &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;: <span style="color:var(--primary)">Vanilla JS + CSS (eDEX-UI inspired)</span></div>
+            </div>
+
+        </div>
+    </section>
+
+</main>
+
+<script src="{{ url_for('static', filename='js/lang/ru.js') }}"></script>
+<script src="{{ url_for('static', filename='js/lang/en.js') }}"></script>
+<script src="{{ url_for('static', filename='js/i18n.js') }}"></script>
+<script src="{{ url_for('static', filename='js/intro.js') }}"></script>
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+<script src="{{ url_for('static', filename='js/exit.js') }}"></script>
+<script>
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => I18N.init());
+    } else {
+        I18N.init();
+    }
+</script>
+</body>
+</html>
